@@ -1,75 +1,51 @@
-/*********** Librerias utilizadas **************/
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<ctype.h>
+#ifndef ANLEX_H
+#define ANLEX_H
 
-/************* Definiciones ********************/
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
-//Codigos
-#define PROGRAM		256
-#define TYPE		257
-#define VAR			258
-#define ARRAY		259
-#define BEGIN		260
-#define END			261
-#define PR_DO		262
-#define TO			263
-#define DOWNTO		264
-#define THEN		265
-#define OF			266
-#define FUNCTION	267
-#define PROCEDURE	268
-#define PR_INTEGER	269
-#define PR_REAL		270
-#define PR_BOOLEAN	271
-#define PR_CHAR		272
-#define PR_FOR		273
-#define PR_IF		274
-#define PR_ELSE		275
-#define PR_WHILE	276
-#define REPEAT		277
-#define UNTIL		278
-#define PR_CASE		279
-#define RECORD		280
-#define WRITELN		281
-#define WRITE		282
-#define CONST		283
-#define NUM			284
-#define ID			285
-#define BOOL		286
-#define CAR			287
-#define LITERAL		288
-#define NOT			289
-#define OPREL		290
-#define OPSUMA		291
-#define OPMULT		292
-#define OPASIGNA	293
-#define USER_TYPE	294
-// Fin Codigos
-#define TAMBUFF 	5
-#define TAMLEX 		50
-#define TAMHASH 	101
+#define TAMHASH 101
+#define TAMLEX 50
 
-/************* Estructuras ********************/
+// Tokens JSON
+#define L_LLAVE 256
+#define R_LLAVE 257
+#define L_CORCHETE 258
+#define R_CORCHETE 259
+#define COMA 260
+#define DOS_PUNTOS 261
+#define PR_TRUE 262
+#define PR_FALSE 263
+#define PR_NULL 264
+#define STRING 265
+#define NUMBER 266
+#define EOF_TOKEN 267
 
-typedef struct entrada{
-	//definir los campos de 1 entrada de la tabla de simbolos
-	int compLex;
-	char lexema[TAMLEX];	
-	struct entrada *tipoDato; // null puede representar variable no declarada	
-	// aqui irian mas atributos para funciones y procedimientos...
-	
+typedef struct entrada {
+    int compLex;
+    char lexema[TAMLEX];
 } entrada;
 
 typedef struct {
-	int compLex;
-	entrada *pe;
+    int compLex;
+    entrada *pe;
 } token;
 
-/************* Prototipos ********************/
+// Declaraciones de funciones
+void initTabla(void);
+void initTablaSimbolos(void);
 void insertar(entrada e);
 entrada* buscar(const char *clave);
-void initTabla();
-void initTablaSimbolos();
-void getToken();
+void getToken(FILE *archivo, FILE *salida);
+void imprimirToken(int token, FILE *salida);
+
+//Declaraciones externas
+extern entrada *tabla;
+extern int tamTabla;
+extern int elems;
+extern int numLinea;
+extern token t;
+
+#endif
