@@ -3,26 +3,85 @@
 // Variables globales
 int numLinea = 1;
 token t;
+int indent = 0;
+char linea[1024] = "";
+int nuevaLinea = 1;
 
 void error(const char* mensaje) {
     printf("Lin %d: Error Lexico. %s.\n", numLinea, mensaje);    
 }
 
 void imprimirToken(int token, FILE *salida) {
-    switch(token) {
-        case L_LLAVE: fprintf(salida, "L_LLAVE"); break;
-        case R_LLAVE: fprintf(salida, "R_LLAVE"); break;
-        case L_CORCHETE: fprintf(salida, "L_CORCHETE"); break;
-        case R_CORCHETE: fprintf(salida, "R_CORCHETE"); break;
-        case COMA: fprintf(salida, "COMA"); break;
-        case DOS_PUNTOS: fprintf(salida, "DOS_PUNTOS"); break;
-        case PR_TRUE: fprintf(salida, "PR_TRUE"); break;
-        case PR_FALSE: fprintf(salida, "PR_FALSE"); break;
-        case PR_NULL: fprintf(salida, "PR_NULL"); break;
-        case STRING: fprintf(salida, "STRING"); break;
-        case NUMBER: fprintf(salida, "NUMBER"); break;
-        case EOF_TOKEN: fprintf(salida, "EOF"); break;
-        default: fprintf(salida, "UNKNOWN"); break;
+    char buffer[64];
+
+    switch (token) {
+        case L_LLAVE:
+        case L_CORCHETE:
+            if (strlen(linea) > 0) {
+                for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+                fprintf(salida, "%s\n", linea);
+                linea[0] = '\0';
+            }
+            for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+            fprintf(salida, "%s\n", token == L_LLAVE ? "L_LLAVE" : "L_CORCHETE");
+            indent++;
+            break;
+
+        case R_LLAVE:
+        case R_CORCHETE:
+            if (strlen(linea) > 0) {
+                for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+                fprintf(salida, "%s\n", linea);
+                linea[0] = '\0';
+            }
+            indent--;
+            for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+            fprintf(salida, "%s\n", token == R_LLAVE ? "R_LLAVE" : "R_CORCHETE");
+            break;
+
+        case COMA:
+            strcat(linea, " COMA");
+            for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+            fprintf(salida, "%s\n", linea);
+            linea[0] = '\0';
+            break;
+
+        case DOS_PUNTOS:
+            strcat(linea, " DOS_PUNTOS");
+            break;
+
+        case PR_TRUE:
+            strcat(linea, "PR_TRUE");
+            break;
+
+        case PR_FALSE:
+            strcat(linea, "PR_FALSE");
+            break;
+
+        case PR_NULL:
+            strcat(linea, "PR_NULL");
+            break;
+
+        case STRING:
+            if (strlen(linea) > 0) strcat(linea, " ");
+            strcat(linea, "STRING");
+            break;
+
+        case NUMBER:
+            strcat(linea, " NUMBER");
+            break;
+
+        case EOF_TOKEN:
+            if (strlen(linea) > 0) {
+                for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+                fprintf(salida, "%s\n", linea);
+            }
+            fprintf(salida, "EOF\n");
+            break;
+
+        default:
+            strcat(linea, " UNKNOWN");
+            break;
     }
 }
 
@@ -139,7 +198,7 @@ int main(int argc, char* argv[]) {
     
     while (t.compLex != EOF_TOKEN) {
         getToken(entrada, salida);
-        fprintf(salida, " ");
+        //fprintf(salida, " "); ya se maneja en la funcion imprimir token
     }
     
     fclose(entrada);
