@@ -12,10 +12,9 @@ void attribute();
 void element_list();
 void attribute_value();
 
-// Manejo de errores
 void error(const char* mensaje) {
     printf("Error sintáctico en línea %d: %s. Encontrado: %s\n", numLinea, mensaje, t.pe->lexema);
-    exit(1); // Para la primera versión, salimos en el primer error
+    exit(1); 
 }
 
 void match(int esperado) {
@@ -29,7 +28,7 @@ void match(int esperado) {
 }
 
 void json() {
-    getToken(archivoFuente, NULL); // Obtener el primer token
+    getToken(archivoFuente, NULL); 
     element();
     if (t.compLex != EOF_TOKEN)
         error("Se esperaba fin de archivo");
@@ -121,7 +120,7 @@ int main(int argc, char *argv[]) {
     initTabla();
     initTablaSimbolos();
 
-    json();  // Punto de entrada del análisis
+    json(); 
 
     fclose(archivoFuente);
     return 0;

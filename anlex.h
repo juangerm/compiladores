@@ -9,7 +9,6 @@
 #define TAMHASH 101
 #define TAMLEX 50
 
-// Tokens JSON
 #define L_LLAVE 256
 #define R_LLAVE 257
 #define L_CORCHETE 258
@@ -33,7 +32,6 @@ typedef struct {
     entrada *pe;
 } token;
 
-// Declaraciones de funciones
 void initTabla(void);
 void initTablaSimbolos(void);
 void insertar(entrada e);
@@ -41,7 +39,6 @@ entrada* buscar(const char *clave);
 void getToken(FILE *archivo, FILE *salida);
 void imprimirToken(int token, FILE *salida);
 
-//Declaraciones externas
 extern entrada *tabla;
 extern int tamTabla;
 extern int elems;

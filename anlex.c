@@ -136,7 +136,6 @@ void getToken(FILE *archivo, FILE *salida) {
             continue;
         }
         
-        // Manejo de strings
         if (c == '"') {
             i = 0;
             lexema[i++] = c;
@@ -156,8 +155,7 @@ void getToken(FILE *archivo, FILE *salida) {
             t.compLex = STRING;
             return;
         }
-        
-        // Manejo de números
+       
         if (isdigit(c) || c == '-') {
             i = 0;
             lexema[i++] = c;
@@ -178,7 +176,6 @@ void getToken(FILE *archivo, FILE *salida) {
             return;
         }
         
-        // Manejo de símbolos simples
         if (c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ':') {
             char sym[2] = {c, '\0'};
             t.pe = buscar(sym);
@@ -186,7 +183,6 @@ void getToken(FILE *archivo, FILE *salida) {
             return;
         }
         
-        // Manejo de palabras reservadas
         if (isalpha(c)) {
             i = 0;
             lexema[i++] = c;
