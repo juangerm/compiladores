@@ -3,84 +3,123 @@
 // Variables globales
 int numLinea = 1;
 token t;
-int indent = 0;
-char linea[1024] = "";
-int nuevaLinea = 1;
+//int indent = 0;
+//char linea[1024] = "";
+//int nuevaLinea = 1;
 
-void error(const char* mensaje) {
+void errorLexico(const char* mensaje) {
     printf("Lin %d: Error Lexico. %s.\n", numLinea, mensaje);    
 }
 
+int indent = 0;
+char bufferLinea[1024] = "";
+int necesitaNuevaLinea = 0;
+
+void imprimirLinea(FILE *salida) {
+    if (strlen(bufferLinea) > 0) {
+        for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+        fprintf(salida, "%s\n", bufferLinea);
+        bufferLinea[0] = '\0';
+        necesitaNuevaLinea = 0;
+    }
+}
+
+void agregarAToken(const char *texto) {
+    if (strlen(bufferLinea) > 0)
+        strcat(bufferLinea, " ");
+    strcat(bufferLinea, texto);
+}
+
 void imprimirToken(int token, FILE *salida) {
-    char buffer[64];
-
-    switch (token) {
+    static int nuevaLinea = 1;
+    static int indent = 0;
+    static int enArray = 0;
+    
+    switch(token) {
         case L_LLAVE:
-        case L_CORCHETE:
-            if (strlen(linea) > 0) {
-                for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-                fprintf(salida, "%s\n", linea);
-                linea[0] = '\0';
-            }
+            if (!nuevaLinea) fprintf(salida, "\n");
             for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-            fprintf(salida, "%s\n", token == L_LLAVE ? "L_LLAVE" : "L_CORCHETE");
+            fprintf(salida, "L_LLAVE\n");
             indent++;
+            for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+            nuevaLinea = 1;
             break;
-
+            
+        case L_CORCHETE:
+            if (!nuevaLinea) fprintf(salida, " ");
+            fprintf(salida, "L_CORCHETE\n");
+            enArray = 1;
+            //indent++;
+            for (int i = 0; i < indent; i++) fprintf(salida, "\t");
+            nuevaLinea = 1;
+            break;
+            
         case R_LLAVE:
-        case R_CORCHETE:
-            if (strlen(linea) > 0) {
-                for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-                fprintf(salida, "%s\n", linea);
-                linea[0] = '\0';
-            }
+            if (!nuevaLinea) fprintf(salida, "\n");
             indent--;
             for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-            fprintf(salida, "%s\n", token == R_LLAVE ? "R_LLAVE" : "R_CORCHETE");
+            fprintf(salida, "R_LLAVE");
+            nuevaLinea = 0;
+            enArray = 0;
             break;
-
-        case COMA:
-            strcat(linea, " COMA");
+            
+        case R_CORCHETE:
+            if (!nuevaLinea) fprintf(salida, "\n");
+            indent--;
             for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-            fprintf(salida, "%s\n", linea);
-            linea[0] = '\0';
+            fprintf(salida, "R_CORCHETE");
+            nuevaLinea = 0;
+            enArray = 0;
             break;
-
-        case DOS_PUNTOS:
-            strcat(linea, " DOS_PUNTOS");
-            break;
-
-        case PR_TRUE:
-            strcat(linea, "PR_TRUE");
-            break;
-
-        case PR_FALSE:
-            strcat(linea, "PR_FALSE");
-            break;
-
-        case PR_NULL:
-            strcat(linea, "PR_NULL");
-            break;
-
-        case STRING:
-            if (strlen(linea) > 0) strcat(linea, " ");
-            strcat(linea, "STRING");
-            break;
-
-        case NUMBER:
-            strcat(linea, " NUMBER");
-            break;
-
-        case EOF_TOKEN:
-            if (strlen(linea) > 0) {
+            
+        case COMA:
+            if (enArray) {
+                fprintf(salida, " COMA\n");
                 for (int i = 0; i < indent; i++) fprintf(salida, "\t");
-                fprintf(salida, "%s\n", linea);
+            } else {
+                fprintf(salida, " COMA\n");
             }
-            fprintf(salida, "EOF\n");
+            nuevaLinea = 0;
             break;
-
+            
+        case DOS_PUNTOS:
+            fprintf(salida, " DOS_PUNTOS");
+            nuevaLinea = 0;
+            break;
+            
+        case PR_TRUE:
+            fprintf(salida, "PR_TRUE");
+            nuevaLinea = 0;
+            break;
+            
+        case PR_FALSE:
+            fprintf(salida, "PR_FALSE");
+            nuevaLinea = 0;
+            break;
+            
+        case PR_NULL:
+            fprintf(salida, "PR_NULL");
+            nuevaLinea = 0;
+            break;
+            
+        case STRING:
+            if (!nuevaLinea) fprintf(salida, " ");
+            fprintf(salida, "STRING");
+            nuevaLinea = 0;
+            break;
+            
+        case NUMBER:
+            fprintf(salida, " NUMBER");
+            nuevaLinea = 0;
+            break;
+            
+        case EOF_TOKEN:
+            fprintf(salida, "\n");
+            break;
+            
         default:
-            strcat(linea, " UNKNOWN");
+            fprintf(salida, " UNKNOWN");
+            nuevaLinea = 0;
             break;
     }
 }
@@ -97,28 +136,25 @@ void getToken(FILE *archivo, FILE *salida) {
             continue;
         }
         
-        // Manejo de strings (entre comillas)
+        // Manejo de strings
         if (c == '"') {
             i = 0;
             lexema[i++] = c;
-            while((c = fgetc(archivo)) != EOF) {
-                if (c == '"') {
-                    lexema[i++] = c;
-                    lexema[i] = '\0';
-                    t.pe = buscar(lexema);
-                    if (t.pe->compLex == -1) {
-                        strcpy(e.lexema, lexema);
-                        e.compLex = STRING;
-                        insertar(e);
-                        t.pe = buscar(lexema);
-                    }
-                    t.compLex = STRING;
-                    imprimirToken(t.compLex, salida);
-                    break;
-                }
+            while((c = fgetc(archivo)) != EOF && c != '"') {
                 lexema[i++] = c;
             }
-            continue;
+            if (c == '"') lexema[i++] = c;
+            lexema[i] = '\0';
+            
+            t.pe = buscar(lexema);
+            if (t.pe->compLex == -1) {
+                strcpy(e.lexema, lexema);
+                e.compLex = STRING;
+                insertar(e);
+                t.pe = buscar(lexema);
+            }
+            t.compLex = STRING;
+            return;
         }
         
         // Manejo de números
@@ -128,8 +164,8 @@ void getToken(FILE *archivo, FILE *salida) {
             while((c = fgetc(archivo)) != EOF && (isdigit(c) || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-')) {
                 lexema[i++] = c;
             }
-            lexema[i] = '\0';
             ungetc(c, archivo);
+            lexema[i] = '\0';
             
             t.pe = buscar(lexema);
             if (t.pe->compLex == -1) {
@@ -139,8 +175,7 @@ void getToken(FILE *archivo, FILE *salida) {
                 t.pe = buscar(lexema);
             }
             t.compLex = NUMBER;
-            imprimirToken(t.compLex, salida);
-            continue;
+            return;
         }
         
         // Manejo de símbolos simples
@@ -148,37 +183,32 @@ void getToken(FILE *archivo, FILE *salida) {
             char sym[2] = {c, '\0'};
             t.pe = buscar(sym);
             t.compLex = t.pe->compLex;
-            imprimirToken(t.compLex, salida);
-            continue;
+            return;
         }
         
-        // Manejo de palabras reservadas (true, false, null)
+        // Manejo de palabras reservadas
         if (isalpha(c)) {
             i = 0;
             lexema[i++] = c;
             while((c = fgetc(archivo)) != EOF && isalpha(c)) {
                 lexema[i++] = c;
             }
-            lexema[i] = '\0';
             ungetc(c, archivo);
+            lexema[i] = '\0';
             
             t.pe = buscar(lexema);
             if (t.pe->compLex != -1) {
                 t.compLex = t.pe->compLex;
-                imprimirToken(t.compLex, salida);
             } else {
-                fprintf(stderr, "Error: Identificador no reconocido '%s'\n", lexema);
+                errorLexico("Identificador no reconocido");
             }
-            continue;
+            return;
         }
     }
     
-    if (c == EOF) {
-        t.compLex = EOF_TOKEN;
-        imprimirToken(t.compLex, salida);
-    }
+    t.compLex = EOF_TOKEN;
 }
-
+/*
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         printf("Uso: %s <archivo_entrada> <archivo_salida>\n", argv[0]);
@@ -195,7 +225,7 @@ int main(int argc, char* argv[]) {
 
     initTabla();
     initTablaSimbolos();
-    
+    t.compLex = 0;
     while (t.compLex != EOF_TOKEN) {
         getToken(entrada, salida);
         //fprintf(salida, " "); ya se maneja en la funcion imprimir token
@@ -205,3 +235,4 @@ int main(int argc, char* argv[]) {
     fclose(salida);
     return 0;
 }
+*/
